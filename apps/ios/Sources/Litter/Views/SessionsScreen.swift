@@ -665,7 +665,7 @@ struct SessionsScreen: View {
         Button {
             renamingThreadKey = thread.key
             renameCurrentTitle = thread.sessionTitle
-            renameDraft = ""
+            renameDraft = thread.sessionTitle
         } label: {
             Label("Rename", systemImage: "pencil")
         }
@@ -723,7 +723,7 @@ struct SessionsScreen: View {
                     } else if thread.isSubagent {
                         subagentStatusIndicator(thread.agentStatus).padding(.top, 3)
                     } else {
-                        Circle().fill(Color.clear).frame(width: 8, height: 8).padding(.top, 3)
+                        Circle().fill(LitterTheme.textMuted.opacity(0.4)).frame(width: 8, height: 8).padding(.top, 3)
                     }
 
                     VStack(alignment: .leading, spacing: 3) {
@@ -764,6 +764,13 @@ struct SessionsScreen: View {
                                     .controlSize(.small)
                                     .tint(LitterTheme.accent)
                             }
+                        }
+
+                        if !hasTurnActive, let lastMessage = sessionsModel.localLastMessages.lastMessage(for: thread.key) {
+                            Text(lastMessage)
+                                .litterFont(.caption2)
+                                .foregroundColor(LitterTheme.textMuted)
+                                .lineLimit(1)
                         }
 
                         HStack(spacing: 4) {
@@ -1075,7 +1082,12 @@ struct SessionsScreen: View {
     private func submitRename() async {
         guard let key = renamingThreadKey else { return }
         let nextTitle = renameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !nextTitle.isEmpty else { return }
+        guard !nextTitle.isEmpty else {
+            renamingThreadKey = nil
+            renameCurrentTitle = ""
+            renameDraft = ""
+            return
+        }
         do {
             try await serverManager.renameThread(key, to: nextTitle)
         } catch {
